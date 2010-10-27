@@ -34,12 +34,9 @@ class Chef
           Chef::Log.fatal("You must specify a client name")
           exit 1
         end
-        
+
         edit_object(Chef::ApiClient, @client_name)
       end
     end
   end
 end
-
-
-
