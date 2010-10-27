@@ -179,6 +179,21 @@ describe Chef::ApiClient do
     end
 
   end
+
+  describe "list" do
+    it "should perform a search query if we ask for an inflated list" do
+      search_query_mock = mock()
+      response = { 'name' => 'foo' }
+      search_query_mock.should_receive(:search).with(:client).and_yield(response)
+      Chef::Search::Query.should_receive(:new).and_return(search_query_mock)
+      Chef::ApiClient.list(true)
+    end
+
+    it "should by default get the list of clients from our chef server" do
+      rest_mock = mock()
+      rest_mock.should_receive(:get_rest).with('clients')
+      Chef::REST.should_receive(:new).and_return(rest_mock)
+      Chef::ApiClient.list
+    end
+  end
 end
-
-
