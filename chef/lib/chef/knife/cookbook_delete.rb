@@ -21,12 +21,20 @@ require 'chef/knife'
 class Chef
   class Knife
     class CookbookDelete < Knife
-      
-      option :all, :short => '-a', :long => '--all', :boolean => true, :description => 'delete all versions'
-
-      option :purge, :short => '-p', :long => '--purge', :boolean => true, :description => 'Permanently remove files from backing data store'
 
       banner "knife cookbook delete COOKBOOK VERSION (options)"
+
+      option :all,
+        :short => '-a',
+        :long => '--all',
+        :boolean => true,
+        :description => 'delete all versions'
+
+      option :purge,
+        :short => '-p',
+        :long => '--purge',
+        :boolean => true,
+        :description => 'Permanently remove files from backing data store'
 
       def run
         confirm("Files that are common to multiple cookbooks are shared, so purging the files may disable other cookbooks. Are you sure you want to purge files instead of just deleting the cookbook") if config[:purge]
@@ -99,7 +107,7 @@ class Chef
         valid_responses[(available_versions.size + 1).to_s] = :all
         question << "#{available_versions.size + 1}. All versions\n\n"
         responses = ask_question(question).split(',').map { |response| response.strip }
-        
+
         if responses.empty?
           Chef::Log.error("No versions specified, exiting")
           exit(1)
@@ -130,9 +138,9 @@ class Chef
           end
         end
       end
-      
+
       private
-      
+
       def delete_request(path)
         path += "?purge=true" if config[:purge]
         rest.delete_rest(path)
