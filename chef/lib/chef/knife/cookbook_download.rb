@@ -36,7 +36,7 @@ class Chef
        :long => "--dir DOWNLOAD_DIRECTORY",
        :description => "The directory to download the cookbook into",
        :default => Dir.pwd
-      
+
       option :force,
        :short => "-f",
        :long => "--force",
@@ -55,9 +55,9 @@ class Chef
         elsif @version.nil?
           determine_version
         end
-          
+
         Chef::Log.info("Downloading #{@cookbook_name} cookbook version #{@version}")
-        
+
         cookbook = rest.get_rest("cookbooks/#{@cookbook_name}/#{@version}")
         manifest = cookbook.manifest
 
@@ -71,7 +71,7 @@ class Chef
             exit
           end
         end
-        
+
         Chef::CookbookVersion::COOKBOOK_SEGMENTS.each do |segment|
           next unless manifest.has_key?(segment)
           Chef::Log.info("Downloading #{segment}")
