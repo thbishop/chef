@@ -29,35 +29,60 @@ describe Chef::Knife::CookbookList do
 
   describe "run" do
     before(:each) do
-      @cookbooks = { 'foo' => 'https://chefserver.example.com/cookbooks/foo',
-                     'bar' => 'https://chefserver.example.com/cookbooks/bar',
-                     'baz' => 'https://chefserver.example.com/cookbooks/baz'
-      }
-
-      @rest.should_receive(:get_rest).with('cookbooks').and_return(@cookbooks)
+      @chef_server_url = 'https://chefserver.example.com'
     end
 
-    describe "without any arguments" do
-      it "should output the cookbook names" do
-        @knife.run
-        @cookbooks.each_pair do |name, uri|
-          @stdout.string.should include(name)
-          @stdout.string.should_not include(uri)
+    describe "without an environment set" do
+      before(:each) do
+        @cookbooks = { 'foo' => "#{@chef_server_url}/cookbooks/foo/1.0.0",
+                       'bar' => "#{@chef_server_url}/cookbooks/bar/2.3.4",
+                       'baz' => "#{@chef_server_url}/cookbooks/baz/7.1.8"
+        }
+        @rest.should_receive(:get_rest).with('/cookbooks/_latest').and_return(@cookbooks)
+      end
+
+      describe "without any arguments" do
+        it "should output the cookbook names" do
+          @knife.run
+          @cookbooks.each_pair do |name, uri|
+            @stdout.string.should include(name)
+            @stdout.string.should_not include(uri)
+          end
+        end
+      end
+
+      describe "with -w or --with-uri" do
+        it "should output the cookbook names and their uris with -w or --with-uri" do
+          @knife.config[:with_uri] = true
+          @knife.run
+          @cookbooks.each_pair do |name, uri|
+            @stdout.string.should include(name)
+            @stdout.string.should include(uri)
+          end
         end
       end
     end
 
-    describe "with -w or --with-uri" do
-      it "should output the cookbook names and their uris with -w or --with-uri" do
-        @knife.config[:with_uri] = true
-        @knife.run
-        @cookbooks.each_pair do |name, uri|
-          @stdout.string.should include(name)
-          @stdout.string.should include(uri)
+    describe "with an environment set" do
+      before(:each) do
+        Chef::Config[:environment] = 'production'
+        @cookbooks = { 'foo' => "#{@chef_server_url}/environments/production/cookbooks/foo/1.0.0",
+                       'bar' => "#{@chef_server_url}/environments/production/cookbooks/bar/2.3.4",
+                       'baz' => "#{@chef_server_url}/environments/production/cookbooks/baz/7.1.8"
+        }
+        @rest.should_receive(:get_rest).with('/environments/production/cookbooks').and_return(@cookbooks)
+      end
+
+      describe "without any arguments" do
+        it "should output the cookbook names" do
+          @knife.run
+          @cookbooks.each_pair do |name, uri|
+            @stdout.string.should include(name)
+            @stdout.string.should_not include(uri)
+          end
         end
       end
     end
 
   end
 end
-    

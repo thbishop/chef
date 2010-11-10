@@ -35,7 +35,7 @@ describe Chef::Knife::CookbookMetadata do
 
     @json_file_mock = mock()
     @json_file_mock.should_receive(:write).and_return(true)
-    JSON.should_receive(:pretty_generate).with(@cookbook_metadata).and_return(true)
+    Chef::JSON.should_receive(:to_json_pretty).with(@cookbook_metadata).and_return(true)
     File.should_receive(:open).with(cookbook_metadata_json_file, "w").and_yield(@json_file_mock)
   end
 
