@@ -79,11 +79,9 @@ class Chef
           server_list << server.groups.join(", ")
           server_list << server.state
         end
-        puts h.list(server_list, :columns_across, 7)
+        stdout.puts h.list(server_list, :columns_across, 7)
 
       end
     end
   end
 end
-
-
