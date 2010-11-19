@@ -34,7 +34,7 @@ class Chef
           Chef::Log.fatal("You must specify a node name")
           exit 1
         end
-        
+
         node = Chef::Node.new
         node.name(@node_name)
         create_object(node)
@@ -42,6 +42,3 @@ class Chef
     end
   end
 end
-
-
-
