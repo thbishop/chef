@@ -31,10 +31,15 @@ class Chef::Knife::Exec < Chef::Knife
     require 'chef/shef/ext'
   end
 
+  def get_new_obj
+    Object.new
+  end
+
   def run
     late_load_deps
     scripts = Array(name_args)
-    context = Object.new
+#    context = Object.new
+    context = get_new_obj
     Shef::Extensions.extend_context_object(context)
     if config[:exec]
       context.instance_eval(config[:exec], "-E Argument", 0)
