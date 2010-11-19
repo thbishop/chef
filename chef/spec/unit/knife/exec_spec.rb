@@ -32,7 +32,7 @@ describe Chef::Knife::Exec do
     end
 
     describe "without a script" do
-      it "should read from STDIN" do
+      it "should eval the input from STDIN" do
         STDIN.should_receive(:read).and_return('puts "hello from stdin"')
         @context_mock.should_receive(:instance_eval).with('puts "hello from stdin"', "STDIN", 0)
         @knife.run

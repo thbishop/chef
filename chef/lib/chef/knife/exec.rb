@@ -38,7 +38,6 @@ class Chef::Knife::Exec < Chef::Knife
   def run
     late_load_deps
     scripts = Array(name_args)
-#    context = Object.new
     context = get_new_obj
     Shef::Extensions.extend_context_object(context)
     if config[:exec]
@@ -53,5 +52,5 @@ class Chef::Knife::Exec < Chef::Knife
       context.instance_eval(script, "STDIN", 0)
     end
   end
-  
+
 end
