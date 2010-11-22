@@ -26,6 +26,8 @@ class Chef
 
       banner "knife rackspace server create [RUN LIST...] (options)"
 
+      attr_accessor :initial_sleep_delay
+
       option :flavor,
         :short => "-f FLAVOR",
         :long => "--flavor FLAVOR",
@@ -180,5 +182,3 @@ class Chef
     end
   end
 end
-
-
