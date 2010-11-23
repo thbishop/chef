@@ -29,7 +29,7 @@ class Chef
         @highline ||= HighLine.new
       end
 
-      def run 
+      def run
         require 'fog'
         require 'highline'
         require 'net/ssh/multi'
@@ -37,7 +37,7 @@ class Chef
 
         connection = Fog::Rackspace::Servers.new(
           :rackspace_api_key => Chef::Config[:knife][:rackspace_api_key],
-          :rackspace_username => Chef::Config[:knife][:rackspace_api_username] 
+          :rackspace_username => Chef::Config[:knife][:rackspace_api_username]
         )
 
         server_list = [ h.color('ID', :bold), h.color('Name', :bold), h.color('Public IP', :bold), h.color('Private IP', :bold), h.color('Flavor ID', :bold) ]
@@ -54,6 +54,3 @@ class Chef
     end
   end
 end
-
-
-
