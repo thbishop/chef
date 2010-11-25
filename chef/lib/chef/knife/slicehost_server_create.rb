@@ -25,6 +25,8 @@ class Chef
 
       banner "knife slicehost server create [RUN LIST...] (options)"
 
+      attr_accessor :initial_sleep_delay
+
       option :flavor,
         :short => "-f FLAVOR",
         :long => "--flavor FLAVOR",
@@ -80,13 +82,14 @@ class Chef
         puts "#{h.color("Public Address", :cyan)}: #{response.body['addresses'][1]}"
         puts "#{h.color("Private Address", :cyan)}: #{response.body['addresses'][0]}"
         puts "#{h.color("Password", :cyan)}: #{response.body['root-password']}"
-     
+
         print "\n#{h.color("Requesting status of #{response.body['name']}", :magenta)}"
         saved_password = response.body['root-password']
 
         # wait for it to be ready to do stuff
         loop do
-          sleep 15
+          sleep @initial_sleep_delay ||= 15
+
           host = slicehost.get_slice(response.body['id'])
           if host.body['status'] == 'active'
             break
@@ -94,10 +97,8 @@ class Chef
         end
 
         puts "\nServer ready!!"
-      
+
       end
     end
   end
 end
-
-
