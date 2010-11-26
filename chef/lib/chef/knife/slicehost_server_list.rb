@@ -29,22 +29,22 @@ class Chef
         @highline ||= HighLine.new
       end
 
-      def run 
+      def run
         require 'fog'
         require 'highline'
         require 'net/ssh/multi'
         require 'readline'
-        
+
         slicehost = Fog::Slicehost.new(
           :slicehost_password => Chef::Config[:knife][:slicehost_password]
         )
-       
+
         # Make hash of flavor id => name and image id => name
         flavors = slicehost.flavors.inject({}) { |h,f| h[f.id] = f.name; h }
         images  = slicehost.images.inject({}) { |h,i| h[i.id] = i.name; h }
- 
+
         server_list = [ h.color('ID', :bold), h.color('Name', :bold), h.color('Public IP', :bold), h.color('Private IP', :bold), h.color('Image', :bold), h.color('Flavor', :bold) ]
- 
+
         slicehost.servers.each do |server|
           server_list << server.id.to_s
           server_list << server.name
@@ -59,6 +59,3 @@ class Chef
     end
   end
 end
-
-
-
