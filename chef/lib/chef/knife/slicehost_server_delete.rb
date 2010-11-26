@@ -25,15 +25,15 @@ class Chef
 
       banner "knife slicehost server delete SLICENAME"
 
-      def run 
+      def run
         require 'fog'
         require 'readline'
-        
+
         slicehost = Fog::Slicehost.new(
           :slicehost_password => Chef::Config[:knife][:slicehost_password]
         )
-      
-        # Build hash of slice => id  
+
+        # Build hash of slice => id
         servers = slicehost.servers.inject({}) { |h,f| h[f.name] = f.id; h }
 
         unless servers.has_key?(@name_args[0])
@@ -45,8 +45,8 @@ class Chef
 
         begin
           response = slicehost.delete_slice(servers[@name_args[0]])
-          
-          if response.headers['status'] == "200 OK" 
+
+          if response.headers['status'] == "200 OK"
             Chef::Log.warn("Deleted server #{servers[@name_args[0]]} named #{@name_args[0]}")
           end
         rescue Excon::Errors::UnprocessableEntity
@@ -56,6 +56,3 @@ class Chef
     end
   end
 end
-
-
-
