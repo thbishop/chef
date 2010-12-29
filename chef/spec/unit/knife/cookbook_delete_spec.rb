@@ -1,6 +1,6 @@
 #
 # Author:: Thomas Bishop (<bishop.thomas@gmail.com>)
-# Copyright:: Copyright (c) Thomas Bishop
+# Copyright:: Copyright (c) 2010 Thomas Bishop
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,15 @@ describe Chef::Knife::CookbookDelete do
     @stdout = StringIO.new
     @knife.stub!(:stdout).and_return(@stdout)
     @rest = mock("Chef::REST")
+
+    @log_stringio = StringIO.new
+    @logger = Logger.new(@log_stringio)
+    @original_chef_logger = Chef::Log.logger
+    Chef::Log.logger = @logger
+  end
+
+  after do
+    Chef::Log.logger = @original_chef_logger
   end
 
   describe "run" do
@@ -70,29 +79,29 @@ describe Chef::Knife::CookbookDelete do
         before(:each) do
           @cookbook_data = { 'pizza' => [ '0.0.1', '0.0.2'] }
           @rest.should_receive(:get_rest).with('cookbooks/pizza').and_return(@cookbook_data)
+          @version_to_delete_prompt = /Which version\(s\) do you want to delete\?\n1\. pizza 0\.0\.1\n2\. pizza 0\.0\.2\n3\. All versions\n\n/
         end
 
         describe "and we don't specify a version to delete when prompted" do
           it "should log the error and exit" do
             lambda {
-              Chef::Log.should_receive(:error).with("No versions specified, exiting")
               STDIN.stub!(:readline).and_return("\n")
               @rest.should_not_receive(:delete_rest)
               @knife.stub!(:rest).and_return(@rest)
               @knife.run
-              @stdout.string.should match(/Which version\(s\) do you want to delete\?\n1\. pizza 0\.0\.1\n2\. pizza 0\.0\.2\n3\. All versions\n\n/)
             }.should raise_error(SystemExit) { |e| e.status.should == 1 }
+              @log_stringio.string.should match(Regexp.escape("ERROR -- : No versions specified, exiting"))
           end
         end
 
         describe "and we specify an invalid version to delete when prompted" do
           it "should log the error and skip deleting it" do
-            Chef::Log.should_receive(:error).with("foo is not a valid choice, skipping it")
             STDIN.stub!(:readline).and_return("foo\n")
             @rest.should_not_receive(:delete_rest)
             @knife.stub!(:rest).and_return(@rest)
             @knife.run
-            @stdout.string.should match(/Which version\(s\) do you want to delete\?\n1\. pizza 0\.0\.1\n2\. pizza 0\.0\.2\n3\. All versions\n\n/)
+            @stdout.string.should match(@version_to_delete_prompt)
+            @log_stringio.string.should match(Regexp.escape("ERROR -- : foo is not a valid choice, skipping it"))
           end
         end
 
@@ -107,10 +116,10 @@ describe Chef::Knife::CookbookDelete do
               @rest.should_receive(:delete_rest).with('cookbooks/pizza/0.0.1').and_return(true)
               @rest.should_receive(:delete_rest).with('cookbooks/pizza/0.0.2').and_return(true)
               @knife.stub!(:rest).and_return(@rest)
-              Chef::Log.should_receive(:info).with("Deleted cookbook[pizza][0.0.1]")
-              Chef::Log.should_receive(:info).with("Deleted cookbook[pizza][0.0.2]")
               @knife.run
-              @stdout.string.should match(/Which version\(s\) do you want to delete\?\n1\. pizza 0\.0\.1\n2\. pizza 0\.0\.2\n3\. All versions\n\n/)
+              @stdout.string.should match(@version_to_delete_prompt)
+              @log_stringio.string.should match(Regexp.escape("INFO -- : Deleted cookbook[pizza][0.0.1]"))
+              @log_stringio.string.should match(Regexp.escape("INFO -- : Deleted cookbook[pizza][0.0.2]"))
             end
           end
         }
@@ -119,12 +128,12 @@ describe Chef::Knife::CookbookDelete do
           it "should delete all of the cookbooks" do
             @knife.config[:all] = true
             @knife.stub!(:rest).and_return(@rest)
-            Chef::Log.should_receive(:info).with("Deleted cookbook[pizza][0.0.1]")
-            Chef::Log.should_receive(:info).with("Deleted cookbook[pizza][0.0.2]")
             @rest.should_receive(:delete_rest).with('cookbooks/pizza/0.0.1').and_return(true)
             @rest.should_receive(:delete_rest).with('cookbooks/pizza/0.0.2').and_return(true)
             @knife.should_receive(:confirm).with('Do you really want to delete all versions of pizza').and_return(true)
             @knife.run
+            @log_stringio.string.should match(Regexp.escape("INFO -- : Deleted cookbook[pizza][0.0.1]"))
+            @log_stringio.string.should match(Regexp.escape("INFO -- : Deleted cookbook[pizza][0.0.2]"))
           end
         end
 
@@ -138,16 +147,15 @@ describe Chef::Knife::CookbookDelete do
           http_404_exception = Net::HTTPServerException.new('404', 'HTTPNotFound')
           @rest.should_receive(:get_rest).with('cookbooks/not_valid').and_raise(http_404_exception)
           @knife.stub!(:rest).and_return(@rest)
-          Chef::Log.should_receive(:error).with("Cannot find a cookbook named not_valid to delete")
           @knife.run
         }.should raise_error(SystemExit) { |e| e.status.should == 1 }
+          @log_stringio.string.should match(Regexp.escape("ERROR -- : Cannot find a cookbook named not_valid to delete"))
       end
     end
 
     describe "with a valid cookbook name and valid version" do
       before(:each) do
         @knife.name_args = ['pizza', '0.0.1']
-        @cookbook_data = { 'pizza' => [ '0.0.1'] }
       end
 
       it "should delete the specified version of the cookbook" do
@@ -164,9 +172,9 @@ describe Chef::Knife::CookbookDelete do
         @knife.name_args = []
         lambda {
           @knife.should_receive(:show_usage)
-          Chef::Log.should_receive(:fatal).with('You must provide the name of the cookbook to delete')
           @knife.run
         }.should raise_error(SystemExit) { |e| e.status.should == 1}
+        @log_stringio.string.should match(Regexp.escape("FATAL -- : You must provide the name of the cookbook to delete"))
       end
     end
 

@@ -117,6 +117,7 @@ class Chef
             version
           else
             Chef::Log.error("#{response} is not a valid choice, skipping it")
+            nil
           end
         end
         versions.compact
