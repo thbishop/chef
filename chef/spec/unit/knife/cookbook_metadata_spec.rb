@@ -1,6 +1,6 @@
 #
 # Author:: Thomas Bishop (<bishop.thomas@gmail.com>)
-# Copyright:: Copyright (c) Thomas Bishop
+# Copyright:: Copyright (c) 2010 Thomas Bishop
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,13 +19,25 @@
 require File.expand_path(File.join(File.dirname(__FILE__), "..", "..", "spec_helper"))
 
 describe Chef::Knife::CookbookMetadata do
-  def should_generate_the_cookbook_metadata(cookbook_name, cookbook_path)
-    cookbook_metadata_rb_file = "#{cookbook_path}/#{cookbook_name}/metadata.rb"
-    cookbook_metadata_json_file = "#{cookbook_path}/#{cookbook_name}/metadata.json"
+  before(:each) do
+    @knife = Chef::Knife::CookbookMetadata.new
+    @log_stringio = StringIO.new
+    @logger = Logger.new(@log_stringio)
+    @original_chef_logger = Chef::Log.logger
+    Chef::Log.logger = @logger
+  end
 
-    Chef::Log.should_receive(:info).with("Generating Metadata")
-    Chef::Log.should_receive(:debug).with("Generating metadata for #{cookbook_name} from #{cookbook_metadata_rb_file}")
-    Chef::Log.should_receive(:debug).with("Generated #{cookbook_metadata_json_file}")
+  after do
+    Chef::Log.logger = @original_chef_logger
+  end
+
+  def set_cookbook_generate_expectations
+    cookbook_metadata_rb_file = "#{@cookbook_path}/#{@cookbook_name}/metadata.rb"
+    cookbook_metadata_json_file = "#{@cookbook_path}/#{@cookbook_name}/metadata.json"
+
+    @chef_log_info_messages << 'Generating Metadata'
+    @chef_log_debug_messages << "Generating metadata for #{@cookbook_name} from #{cookbook_metadata_rb_file}"
+    @chef_log_debug_messages << "Generated #{cookbook_metadata_json_file}"
     File.should_receive(:exists?).with(cookbook_metadata_rb_file).and_return(true)
 
     @cookbook_metadata = mock()
@@ -39,15 +51,13 @@ describe Chef::Knife::CookbookMetadata do
     File.should_receive(:open).with(cookbook_metadata_json_file, "w").and_yield(@json_file_mock)
   end
 
-  before(:each) do
-    @knife = Chef::Knife::CookbookMetadata.new
-  end
-
   describe "run" do
     describe "when providing a cookbook name" do
       before(:each) do
         @cookbook_name = 'foo'
         @knife.name_args = [@cookbook_name]
+        @chef_log_info_messages = []
+        @chef_log_debug_messages = []
       end
 
       describe "without any arguments" do
@@ -59,15 +69,21 @@ describe Chef::Knife::CookbookMetadata do
         end
 
         it "should generate the metadata for the cookbook" do
-          should_generate_the_cookbook_metadata(@cookbook_name, @cookbook_path)
+          set_cookbook_generate_expectations
           @knife.run
+          { @chef_log_info_messages => 'INFO', @chef_log_debug_messages => 'DEBUG' }.each_pair do |messages, type|
+            messages.count.should > 0
+            messages.each do |message|
+              @log_stringio.string.should match(Regexp.escape("#{type} -- : #{message}"))
+            end
+          end
         end
 
         it "should not generate the metatdata if the cookbook metadata file doesn't exist" do
-          Chef::Log.should_receive(:info).with("Generating Metadata")
           File.should_receive(:exists?).with(@metadata_rb_file).and_return(false)
-          Chef::Log.debug("No #{@metadata_rb_file} found; skipping!")
           @knife.run
+          @log_stringio.string.should match(Regexp.escape("INFO -- : Generating Metadata"))
+          @log_stringio.string.should match(Regexp.escape("DEBUG -- : No #{@metadata_rb_file} found; skipping!"))
         end
       end
 
@@ -80,8 +96,14 @@ describe Chef::Knife::CookbookMetadata do
         end
 
         it "should generate the metadata for our cookbook" do
-          should_generate_the_cookbook_metadata(@cookbook_name, @cookbook_path)
+          set_cookbook_generate_expectations
           @knife.run
+          { @chef_log_info_messages => 'INFO', @chef_log_debug_messages => 'DEBUG' }.each_pair do |messages, type|
+            messages.count.should > 0
+            messages.each do |message|
+              @log_stringio.string.should match(Regexp.escape("#{type} -- : #{message}"))
+            end
+          end
         end
       end
 
@@ -94,6 +116,8 @@ describe Chef::Knife::CookbookMetadata do
           Chef::Config[:cookbook_path] = @cookbook_path
           @knife.config[:all] = true
           @cookbooks = ['foo', 'bar', 'baz']
+          @chef_log_info_messages = []
+          @chef_log_debug_messages = []
         end
 
         it "should generate the metatdata for each cookbook" do
@@ -101,9 +125,16 @@ describe Chef::Knife::CookbookMetadata do
           @cookbook_loader.should_receive(:each).and_yield('foo', 'foo').and_yield('bar', 'bar').and_yield('baz', 'baz')
           Chef::CookbookLoader.should_receive(:new).and_return(@cookbook_loader)
           @cookbooks.each do |cookbook|
-            should_generate_the_cookbook_metadata(cookbook, @cookbook_path)
+            @cookbook_name = cookbook
+            set_cookbook_generate_expectations
           end
           @knife.run
+          { @chef_log_info_messages => 'INFO', @chef_log_debug_messages => 'DEBUG' }.each_pair do |messages, type|
+            messages.count.should > 0
+            messages.each do |message|
+              @log_stringio.string.should match(Regexp.escape("#{type} -- : #{message}"))
+            end
+          end
         end
       end
 
